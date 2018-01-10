@@ -1,10 +1,17 @@
 package controlador;
 
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
 import modelo.Modelo;
@@ -16,16 +23,53 @@ public class Controlador implements ActionListener {
 
 	private Vista vista;
 	private Modelo modelo;
+	
+	private byte[] imagenCamara;
 
 	private boolean camaraEncendida = false;
 	private boolean transmitiendo = false;
 	private boolean encriptando = false;
+	
+	Thread hiloCamara = new Thread() {
+		@Override
+		public void run() {
+			vista.encenderCamara();
+			while(camaraEncendida) {
+				Image img = vista.capturarImagen();
+				pintaVentanaCamara(img);
+			    BufferedImage bufImg = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+			    Graphics2D bGr = bufImg.createGraphics();
+			    bGr.drawImage(img, 0, 0, null);
+			    bGr.dispose();
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				try {
+					ImageIO.write(bufImg, "jpg", baos);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				imagenCamara = baos.toByteArray();
+				if(transmitiendo) {
+					modelo.enviaImagen(imagenCamara);
+				}
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {}
+			}
+		}
+
+		private void pintaVentanaCamara(Image img) {
+			vista.pintaVentanaCamara(img);
+		}
+	};
 
 	public Controlador(Vista vista, Modelo modelo) {
 		this.vista = vista;
 		this.modelo = modelo;
 		try {
 			this.ip = InetAddress.getLocalHost();
+			hiloCamara.start();
+			hiloCamara.suspend();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -100,12 +144,16 @@ public class Controlador implements ActionListener {
 		case Vista.CAMARA:
 			camaraEncendida = !camaraEncendida;
 			if(camaraEncendida) {
-				
+				hiloCamara.resume();
+			}else {
+				hiloCamara.suspend();
+				vista.pintaVentanaCamara(null);
 			}
 			break;
 		case Vista.TRANSMITIR:
 			transmitiendo = !transmitiendo;
-
+			if(!transmitiendo)
+				modelo.enviaImagen(null);
 			break;
 		case Vista.ENCRIPTAR:
 			encriptando = !encriptando;
@@ -134,6 +182,21 @@ public class Controlador implements ActionListener {
 			vista.cambiarTextoBtnEncriptar("Dejar de encriptar");
 		} else {
 			vista.cambiarTextoBtnEncriptar("Encriptar");
+		}
+	}
+
+	public void pintaVentanaInterlocutor(BufferedImage img) {
+		vista.pintaVentanaInterlocutor(img);
+		
+	}
+
+	public void pintaVentanaTransmision(byte[] imagen) {
+		try {
+			BufferedImage img = ImageIO.read(new ByteArrayInputStream(imagen));
+			vista.pintaVentanaTransmision(img);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 }

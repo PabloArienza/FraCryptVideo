@@ -1,5 +1,6 @@
 package modelo;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import javax.imageio.ImageIO;
 
 import controlador.Controlador;
 
@@ -135,7 +138,19 @@ public class Modelo extends Thread {
 		while (true) {
 			String mensaje = recibirMensaje();
 			controlador.addMensajeAPantalla("Responde: " + mensaje);
+			BufferedImage imagen = recibirImagen();
+			controlador.pintaVentanaInterlocutor(imagen);
 		}
+	}
+
+	private BufferedImage recibirImagen() {
+		try {
+			BufferedImage img = ImageIO.read(isVideo);
+			return img;
+		}catch(IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public int getPuertoTxt() {
@@ -144,5 +159,16 @@ public class Modelo extends Thread {
 
 	public String getIPCliente() {
 		return socket.getInetAddress().getHostAddress();
+	}
+
+	public void enviaImagen(byte[] imagenCamara) {
+		try {
+			controlador.pintaVentanaTransmision(imagenCamara);
+			osVideo.write(imagenCamara);
+			osVideo.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

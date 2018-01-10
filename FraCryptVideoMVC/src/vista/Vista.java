@@ -14,8 +14,10 @@ import com.github.sarxos.webcam.Webcam;
 import controlador.Controlador;
 import interfaz.Acciones;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -179,5 +181,28 @@ public class Vista extends JFrame implements Acciones {
 		btnTransmitir.addActionListener(controlador);
 		btnEncriptar.setActionCommand(ENCRIPTAR);
 		btnEncriptar.addActionListener(controlador);
+	}
+
+	public void encenderCamara() {
+		camara.open();
+	}
+
+	public Image capturarImagen() {
+		return camara.getImage();
+	}
+
+	public void pintaVentanaCamara(Image img) {
+		img = img.getScaledInstance(160, 120, Image.SCALE_FAST);
+		lblMiCamara.setIcon(new ImageIcon(img));
+	}
+
+	public void pintaVentanaInterlocutor(BufferedImage img) {
+		lblInterlocutor.setIcon(new ImageIcon(img));
+	}
+
+	public void pintaVentanaTransmision(BufferedImage img) {
+		Image im = img;
+		im = im.getScaledInstance(160, 120, Image.SCALE_FAST);
+		lblTransmision.setIcon(new ImageIcon(im));
 	}
 }
